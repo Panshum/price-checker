@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -37,8 +38,15 @@
         .then(res => res.text())
         .then(text => {
           const rows = text.trim().split('\n').map(row => row.split(','));
-          const headers = rows.shift();
-          data = rows.map(row => Object.fromEntries(row.map((val, i) => [headers[i], val])));
+          const headers = rows.shift().map(h => h.trim());
+          data = rows.map(row => {
+            let obj = {};
+            row.forEach((val, i) => {
+              obj[headers[i]] = val.trim();
+            });
+            return obj;
+          });
+          console.log("Loaded headers:", headers);
           alert('CSV data loaded from Google Sheets.');
         })
         .catch(err => alert('Failed to load CSV: ' + err));
@@ -46,7 +54,7 @@
 
     function searchItem() {
       const code = document.getElementById('itemCodeInput').value.trim();
-      const matched = data.filter(row => row['Item Code'] === code);
+      const matched = data.filter(row => row['Item Code']?.trim() === code);
 
       if (matched.length === 0) {
         document.getElementById('results').innerHTML = '<p>No matching item found.</p>';
