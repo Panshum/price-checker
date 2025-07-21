@@ -33,7 +33,7 @@
     let exportList = [];
 
     window.onload = () => {
-      fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vTk5uhH_fkNVkZyXoTR8cl7GODYfAwZZvbLKw71ueaIaF72-RlPOEnP0_-FGP_qHQ/pub?gid=635860009&single=true&output=csv')
+      fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vR8UYKgoeAyw1kQ1GC5XbeiIYtInWmVhBnlKgcyXhuz7YxX8MiJ3tWUtC6peD7DOZ0-6UDq4OS89c0Q/pubhtml?gid=635860009&single=true')
         .then(res => res.arrayBuffer())
         .then(buffer => {
           const text = await res.text();
