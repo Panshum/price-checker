@@ -35,7 +35,7 @@
     let exportList = [];
 
     window.onload = () => {
-      const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8UYKgoeAyw1kQ1GC5XbeiIYtInWmVhBnlKgcyXhuz7YxX8MiJ3tWUtC6peD7DOZ0-6UDq4OS89c0Q/pub?gid=635860009&single=true&output=csv';
+      const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8UYKgoeAyw1kQ1GC5XbeiIYtInWmVhBnlKgcyXhuz7YxX8MiJ3tWUtC6peD7DOZ0-6UDq4OS89c0Q/pub?gid=635860009&single=true&output=csv&t=' + Date.now();
       Papa.parse(csvUrl, {
         download: true,
         header: true,
