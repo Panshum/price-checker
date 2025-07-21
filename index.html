@@ -33,7 +33,7 @@
     let exportList = [];
 
     window.onload = () => {
-      fetch('data.xlsx')
+      fetch('https://docs.google.com/spreadsheets/d/1qzl_jHfPbgbQuQvZ2zpMAw4LSCm7UthO/edit?usp=drive_link&ouid=113867004250074031621&rtpof=true&sd=true')
         .then(res => res.arrayBuffer())
         .then(buffer => {
           const workbook = XLSX.read(buffer, { type: 'array' });
