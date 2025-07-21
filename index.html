@@ -33,13 +33,12 @@
     let exportList = [];
 
     window.onload = () => {
-      fetch('https://docs.google.com/spreadsheets/d/1zyA-Yt9ujFoO_NGPAujZvO1tq2M8ZjkJ/edit?usp=drive_link&ouid=113867004250074031621&rtpof=true&sd=true')
+      fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vTk5uhH_fkNVkZyXoTR8cl7GODYfAwZZvbLKw71ueaIaF72-RlPOEnP0_-FGP_qHQ/pub?gid=635860009&single=true&output=csv')
         .then(res => res.arrayBuffer())
         .then(buffer => {
-          const workbook = XLSX.read(buffer, { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          const sheet = workbook.Sheets[sheetName];
-          data = XLSX.utils.sheet_to_json(sheet);
+          const text = await res.text();
+const rows = XLSX.utils.sheet_to_json(XLSX.read(text, {type: 'string'}).Sheets.Sheet1, { defval: '' });
+data = rows;
           alert('Excel data loaded from server.');
         })
         .catch(err => alert('Failed to load Excel file: ' + err));
