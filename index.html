@@ -34,14 +34,14 @@
 
     window.onload = () => {
       fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vR8UYKgoeAyw1kQ1GC5XbeiIYtInWmVhBnlKgcyXhuz7YxX8MiJ3tWUtC6peD7DOZ0-6UDq4OS89c0Q/pub?gid=635860009&single=true&output=csv')
-        .then(res => res.arrayBuffer())
-        .then(buffer => {
-          const text = await res.text();
-const rows = XLSX.utils.sheet_to_json(XLSX.read(text, {type: 'string'}).Sheets.Sheet1, { defval: '' });
-data = rows;
-          alert('Excel data loaded from server.');
+        .then(res => res.text())
+        .then(text => {
+          const rows = text.trim().split('\n').map(row => row.split(','));
+          const headers = rows.shift();
+          data = rows.map(row => Object.fromEntries(row.map((val, i) => [headers[i], val])));
+          alert('CSV data loaded from Google Sheets.');
         })
-        .catch(err => alert('Failed to load Excel file: ' + err));
+        .catch(err => alert('Failed to load CSV: ' + err));
     };
 
     function searchItem() {
