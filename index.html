@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Item Price Lookup</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    .highlight { color: red; }
+  </style>
+</head>
+<body>
+  <h2>Item Price Lookup Tool</h2>
+  <label>Enter Item Code:</label>
+  <input type="text" id="itemCodeInput" />
+  <button onclick="searchItem()">Search</button>
+
+  <div id="results"></div>
+
+  <h3>Export List</h3>
+  <table id="exportTable">
+    <thead><tr id="exportHeader"></tr></thead>
+    <tbody></tbody>
+  </table>
+  <button onclick="downloadExcel()">Export as Excel</button>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script>
+    let data = [];
+    let exportList = [];
+
+    window.onload = () => {
+      fetch('data.xlsx')
+        .then(res => res.arrayBuffer())
+        .then(buffer => {
+          const workbook = XLSX.read(buffer, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          data = XLSX.utils.sheet_to_json(sheet);
+          alert('Excel data loaded from server.');
+        })
+        .catch(err => alert('Failed to load Excel file: ' + err));
+    };
+
+    function searchItem() {
+      const code = document.getElementById('itemCodeInput').value.trim();
+      const matched = data.filter(row => row['Item Code'] === code);
+
+      if (matched.length === 0) {
+        document.getElementById('results').innerHTML = '<p>No matching item found.</p>';
+        return;
+      }
+
+      let html = `<h3>Results for: ${code}</h3>`;
+      html += '<table><tr>' + Object.keys(matched[0]).map(k => `<th>${k}</th>`).join('') + '<th>% Change</th><th>Action</th></tr>';
+
+      let change = '';
+      if (matched.length > 1) {
+        matched.sort((a, b) => new Date(a.Date) - new Date(b.Date));
+        const oldPrice = parseFloat(matched[0]['Price/M']);
+        const newPrice = parseFloat(matched[matched.length - 1]['Price/M']);
+        if (!isNaN(oldPrice) && oldPrice !== 0) {
+          change = (((newPrice - oldPrice) / oldPrice) * 100).toFixed(2) + '%';
+        }
+      }
+
+      matched.forEach((row, i) => {
+        html += '<tr>' + Object.values(row).map(v => `<td>${v}</td>`).join('') +
+          `<td${i === matched.length - 1 ? ' class="highlight"' : ''}>${i === matched.length - 1 ? change : ''}</td>` +
+          `<td><button onclick='addToExport(${JSON.stringify(row).replace(/'/g, "&#39;")})'>Add</button></td></tr>`;
+      });
+
+      html += '</table>';
+      document.getElementById('results').innerHTML = html;
+    }
+
+    function addToExport(item) {
+      exportList.push(item);
+      updateExportTable();
+    }
+
+    function updateExportTable() {
+      const table = document.getElementById('exportTable');
+      const header = document.getElementById('exportHeader');
+      const body = table.querySelector('tbody');
+      body.innerHTML = '';
+      if (exportList.length === 0) return;
+
+      const keys = Object.keys(exportList[0]);
+      header.innerHTML = keys.map(k => `<th>${k}</th>`).join('');
+
+      exportList.forEach(row => {
+        const tr = document.createElement('tr');
+        keys.forEach(k => {
+          const td = document.createElement('td');
+          td.textContent = row[k];
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      });
+    }
+
+    function downloadExcel() {
+      if (exportList.length === 0) return alert('No items to export.');
+      const ws = XLSX.utils.json_to_sheet(exportList);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Exported Items');
+      XLSX.writeFile(wb, 'exported_items.xlsx');
+    }
+  </script>
+</body>
+</html>
