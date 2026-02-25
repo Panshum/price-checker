@@ -1,187 +1,128 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Item Price Lookup</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <style>
-    body {
-      background-color: #ffffff;
-      color: #000000;
-    }
-    .container {
-      max-width: 960px;
-      margin-top: 50px;
-    }
-    .card {
-      background-color: #f8f9fa;
-      border: 1px solid #dee2e6;
-    }
-    .card-header {
-      background-color: #343a40;
-      color: #ffffff;
-    }
-    .form-control, .btn, .table {
-      background-color: #ffffff;
-      color: #000000;
-      border-color: #ced4da;
-    }
-    .form-control::placeholder {
-      color: #6c757d;
-    }
-    .table-striped > tbody > tr:nth-of-type(odd) {
-      background-color: #f2f2f2;
-    }
-    .highlight {
-      color: #dc3545;
-      font-weight: bold;
-    }
-    .btn-primary {
-      background-color: #0d6efd;
-      border-color: #0d6efd;
-    }
-    .btn-outline-primary {
-      color: #0d6efd;
-      border-color: #0d6efd;
-    }
-    .btn-outline-primary:hover {
-      background-color: #0d6efd;
-      color: #fff;
-    }
-    .alert-warning {
-      background-color: #fff3cd;
-      color: #856404;
-      border-color: #ffeeba;
-    }
-    .logo {
-      display: block;
-      margin: 0 auto 30px;
-      max-width: 100%;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <img src="JML%20Email%20Signature%5B2%5D.png" alt="JML Logos" class="logo">
-    <div class="card shadow-sm mb-4">
-      <div class="card-header">
-        <h3 class="mb-0"><i class="fas fa-search"></i> Item Price Lookup</h3>
-      </div>
-      <div class="card-body">
-        <div class="input-group mb-3">
-          <input type="text" id="itemCodeInput" class="form-control" placeholder="Enter Item Code" />
-          <button class="btn btn-primary" onclick="searchItem()">Search</button>
-        </div>
-        <div id="results"></div>
-      </div>
-    </div>
+<script>
+  let data = [];
+  let exportList = [];
+  let HEADERS = [];
 
-    <div class="card shadow-sm">
-      <div class="card-header">
-        <h5 class="mb-0"><i class="fas fa-file-export"></i> Export List</h5>
-      </div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-bordered" id="exportTable">
-            <thead><tr id="exportHeader"></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <button class="btn btn-success" onclick="downloadExcel()">Export as Excel</button>
-      </div>
-    </div>
-  </div>
+  window.onload = () => {
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8UYKgoeAyw1kQ1GC5XbeiIYtInWmVhBnlKgcyXhuz7YxX8MiJ3tWUtC6peD7DOZ0-6UDq4OS89c0Q/pub?gid=635860009&single=true&output=csv&t=' + Date.now();
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script>
-    let data = [];
-    let exportList = [];
-
-    window.onload = () => {
-      const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR8UYKgoeAyw1kQ1GC5XbeiIYtInWmVhBnlKgcyXhuz7YxX8MiJ3tWUtC6peD7DOZ0-6UDq4OS89c0Q/pub?gid=635860009&single=true&output=csv&t=' + Date.now();
-      Papa.parse(csvUrl, {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          data = results.data;
-          console.log("Parsed CSV:", data);
-        },
-        error: function(err) {
-          alert("Error loading CSV: " + err.message);
+    Papa.parse(csvUrl, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        data = results.data;
+        if (data.length > 0) {
+          HEADERS = Object.keys(data[0]); // 🔥 完全跟Excel Header
         }
-      });
-    };
-
-    function searchItem() {
-      const code = document.getElementById('itemCodeInput').value.trim();
-      const matched = data.filter(row => row['Item Code']?.trim() === code);
-
-      const resultsDiv = document.getElementById('results');
-      if (matched.length === 0) {
-        resultsDiv.innerHTML = '<div class="alert alert-warning">No matching item found.</div>';
-        return;
+        console.log("Headers:", HEADERS);
+      },
+      error: function(err) {
+        alert("Error loading CSV: " + err.message);
       }
+    });
+  };
 
-      let html = `<h5 class="mb-3">Results for: <span class="text-primary">${code}</span></h5>`;
-      html += '<div class="table-responsive"><table class="table table-striped table-hover"><thead><tr>' + Object.keys(matched[0]).map(k => `<th>${k}</th>`).join('') + '<th>% Change</th><th>Action</th></tr></thead><tbody>';
+  function searchItem() {
+    const code = document.getElementById('itemCodeInput').value.trim();
+    const matched = data.filter(row => row['Item Code']?.trim() === code);
 
-      let change = '';
-      if (matched.length > 1) {
-        matched.sort((a, b) => new Date(a.Date) - new Date(b.Date));
-        const oldPrice = parseFloat(matched[0]['Price/M']);
-        const newPrice = parseFloat(matched[matched.length - 1]['Price/M']);
-        if (!isNaN(oldPrice) && oldPrice !== 0) {
-          change = (((newPrice - oldPrice) / oldPrice) * 100).toFixed(2) + '%';
-        }
+    const resultsDiv = document.getElementById('results');
+
+    if (matched.length === 0) {
+      resultsDiv.innerHTML = '<div class="alert alert-warning">No matching item found.</div>';
+      return;
+    }
+
+    let html = `<h5 class="mb-3">Results for: <span class="text-primary">${code}</span></h5>`;
+    html += '<div class="table-responsive"><table class="table table-striped table-hover"><thead><tr>';
+
+    // 🔥 用Excel Header生成
+    HEADERS.forEach(h => {
+      html += `<th>${h}</th>`;
+    });
+
+    html += '<th>% Change</th><th>Action</th></tr></thead><tbody>';
+
+    let change = '';
+
+    if (matched.length > 1) {
+      matched.sort((a, b) => new Date(a.Date) - new Date(b.Date));
+      const oldPrice = parseFloat(matched[0]['Price/M']);
+      const newPrice = parseFloat(matched[matched.length - 1]['Price/M']);
+
+      if (!isNaN(oldPrice) && oldPrice !== 0) {
+        change = (((newPrice - oldPrice) / oldPrice) * 100).toFixed(2) + '%';
       }
+    }
 
-      matched.forEach((row, i) => {
-        html += '<tr>' + Object.values(row).map(v => `<td>${v}</td>`).join('') +
-          `<td${i === matched.length - 1 ? ' class="highlight"' : ''}>${i === matched.length - 1 ? change : ''}</td>` +
-          `<td><button class='btn btn-sm btn-outline-primary' onclick='addToExport(${JSON.stringify(row).replace(/'/g, "&#39;")})'><i class="fas fa-plus"></i> Add</button></td></tr>`;
+    matched.forEach((row, i) => {
+      html += '<tr>';
+
+      HEADERS.forEach(h => {
+        html += `<td>${row[h] ?? ''}</td>`;
       });
 
-      html += '</tbody></table></div>';
-      resultsDiv.innerHTML = html;
-    }
+      html += `<td${i === matched.length - 1 ? ' class="highlight"' : ''}>
+                ${i === matched.length - 1 ? change : ''}
+              </td>`;
 
-    function addToExport(item) {
-      exportList.push(item);
-      updateExportTable();
-    }
+      html += `<td>
+                <button class='btn btn-sm btn-outline-primary'
+                onclick='addToExport(${JSON.stringify(row).replace(/'/g, "&#39;")})'>
+                <i class="fas fa-plus"></i> Add
+                </button>
+               </td>`;
 
-    function updateExportTable() {
-      const table = document.getElementById('exportTable');
-      const header = document.getElementById('exportHeader');
-      const body = table.querySelector('tbody');
-      body.innerHTML = '';
-      if (exportList.length === 0) return;
+      html += '</tr>';
+    });
 
-      const keys = Object.keys(exportList[0]);
-      header.innerHTML = keys.map(k => `<th>${k}</th>`).join('');
+    html += '</tbody></table></div>';
+    resultsDiv.innerHTML = html;
+  }
 
-      exportList.forEach(row => {
-        const tr = document.createElement('tr');
-        keys.forEach(k => {
-          const td = document.createElement('td');
-          td.textContent = row[k];
-          tr.appendChild(td);
-        });
-        body.appendChild(tr);
+  function addToExport(item) {
+    exportList.push(item);
+    updateExportTable();
+  }
+
+  function updateExportTable() {
+    const table = document.getElementById('exportTable');
+    const header = document.getElementById('exportHeader');
+    const body = table.querySelector('tbody');
+
+    body.innerHTML = '';
+    header.innerHTML = '';
+
+    if (exportList.length === 0) return;
+
+    // 🔥 一定跟原始Excel Header順序
+    HEADERS.forEach(h => {
+      header.innerHTML += `<th>${h}</th>`;
+    });
+
+    exportList.forEach(row => {
+      const tr = document.createElement('tr');
+
+      HEADERS.forEach(h => {
+        const td = document.createElement('td');
+        td.textContent = row[h] ?? '';
+        tr.appendChild(td);
       });
+
+      body.appendChild(tr);
+    });
+  }
+
+  function downloadExcel() {
+    if (exportList.length === 0) {
+      alert('No items to export.');
+      return;
     }
 
-    function downloadExcel() {
-      if (exportList.length === 0) return alert('No items to export.');
-      const ws = XLSX.utils.json_to_sheet(exportList);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Exported Items');
-      XLSX.writeFile(wb, 'exported_items.xlsx');
-    }
-  </script>
-</body>
-</html>
+    const ws = XLSX.utils.json_to_sheet(exportList);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Exported Items');
+    XLSX.writeFile(wb, 'exported_items.xlsx');
+  }
+</script>
