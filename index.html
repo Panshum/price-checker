@@ -25,6 +25,7 @@
 <body>
   <div class="container">
     <img src="JML%20Email%20Signature%5B2%5D.png" alt="JML Logos" class="logo">
+
     <div class="card shadow-sm mb-4">
       <div class="card-header">
         <h3 class="mb-0"><i class="fas fa-search"></i> Item Price Lookup</h3>
@@ -54,7 +55,6 @@
     </div>
   </div>
 
-  <!-- libs: 順序要對（先 xlsx / papaparse，再你自己 script） -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
@@ -75,7 +75,7 @@
         complete: function(results) {
           data = results.data || [];
           if (data.length > 0) {
-            HEADERS = Object.keys(data[0]); // 跟 Excel header
+            HEADERS = Object.keys(data[0]); // ✅ 跟Excel/CSV header
           }
           console.log("Headers:", HEADERS);
         },
@@ -94,9 +94,9 @@
     }
 
     function searchItem() {
-      const code = document.getElementById('itemCodeInput').value;
+      const codeRaw = document.getElementById('itemCodeInput').value;
+      const code = (codeRaw ?? '').toString().trim();
 
-      // ✅ 模糊搜尋（只對 Item Code）
       const matched = data.filter(row => fuzzyIncludes(row['Item Code'], code));
 
       const resultsDiv = document.getElementById('results');
@@ -105,16 +105,20 @@
         return;
       }
 
-      const codeShown = (code ?? '').toString().trim();
-
-      let html = `<h5 class="mb-3">Results for: <span class="text-primary">${codeShown}</span></h5>`;
+      let html = `<h5 class="mb-3">Results for: <span class="text-primary">${code}</span></h5>`;
       html += '<div class="table-responsive"><table class="table table-striped table-hover"><thead><tr>';
 
-      HEADERS.forEach(h => { html += `<th>${h}</th>`; });
-      html += '<th>% Change</th><th>Action</th></tr></thead><tbody>';
+      // ✅ Action / Add 放第一欄
+      html += '<th>Action</th>';
 
-      // % Change：只計同一個完整 Item Code（避免模糊搜尋混埋其他 code）
-      const inputNorm = codeShown.toUpperCase();
+      // ✅ Excel header
+      HEADERS.forEach(h => { html += `<th>${h}</th>`; });
+
+      // ✅ % Change 放最後
+      html += '<th>% Change</th></tr></thead><tbody>';
+
+      // ✅ % Change：只計同一個完整 Item Code（避免模糊搜尋混埋其他 code）
+      const inputNorm = code.toUpperCase();
       const exact = matched.find(r => ((r['Item Code'] ?? '').toString().trim().toUpperCase() === inputNorm));
       const groupCode = (exact?.['Item Code'] ?? matched[0]['Item Code'] ?? '').toString();
 
@@ -138,17 +142,21 @@
 
       matched.forEach((row) => {
         html += '<tr>';
-        HEADERS.forEach(h => { html += `<td>${row[h] ?? ''}</td>`; });
 
-        const isLatestOfGroup = (latestRowRef && row === latestRowRef);
-        html += `<td${isLatestOfGroup ? ' class="highlight"' : ''}>${isLatestOfGroup ? change : ''}</td>`;
-
+        // ✅ 第一欄 Action / Add
         html += `<td>
           <button class="btn btn-sm btn-outline-primary"
             onclick='addToExport(${JSON.stringify(row).replace(/'/g, "&#39;")})'>
             <i class="fas fa-plus"></i> Add
           </button>
         </td>`;
+
+        // ✅ Excel 欄位
+        HEADERS.forEach(h => { html += `<td>${row[h] ?? ''}</td>`; });
+
+        // ✅ 最後欄 % Change（只顯示同一 code 最新嗰行）
+        const isLatestOfGroup = (latestRowRef && row === latestRowRef);
+        html += `<td${isLatestOfGroup ? ' class="highlight"' : ''}>${isLatestOfGroup ? change : ''}</td>`;
 
         html += '</tr>';
       });
@@ -170,7 +178,7 @@
       header.innerHTML = '';
       if (exportList.length === 0) return;
 
-      // 跟 Excel header 順序
+      // ✅ Export 表頭跟 Excel header 順序（Export 表唔需要 Action column）
       HEADERS.forEach(h => { header.innerHTML += `<th>${h}</th>`; });
 
       exportList.forEach(row => {
@@ -192,7 +200,7 @@
       XLSX.writeFile(wb, 'exported_items.xlsx');
     }
 
-    // 方便：按 Enter 也會搜尋
+    // ✅ 按 Enter 搜尋
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         const active = document.activeElement;
